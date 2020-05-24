@@ -1,0 +1,32 @@
+[
+  import_deps: [:ecto, :phoenix],
+  inputs: ["*.{ex,exs}", "priv/*/seeds.exs", "{config,lib,test}/**/*.{ex,exs}"],
+  subdirectories: ["priv/*/migrations"],
+  locals_without_parens: [
+    display: 1,
+    except: 1,
+    required: 1,
+    permitted: 1,
+    defchangeset: 2,
+    pipe: 1,
+    pipe: 2,
+    result: 1,
+    result: 2,
+    request: 1,
+    request: 2,
+    response: 1,
+    response: 2,
+    method: 1,
+    method: 2,
+    pre_result: 1,
+    pre_result: 2,
+    pre_request: 1,
+    pre_request: 2,
+    pre_response: 1,
+    pre_response: 2,
+    url: 1,
+    tag: 1,
+    version: 1,
+    meta: 1
+  ]
+]
