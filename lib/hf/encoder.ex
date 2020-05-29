@@ -16,7 +16,7 @@ defmodule Hf.Encoder do
     end
   end
 
-  # alias Hf.Domain.Request, as: R
+  # alias Hf.Domain.Record, as: R
   # defimpl Encoder, for: R do
   #   def encode(struct, opts) do
   #     struct

@@ -35,6 +35,6 @@ defmodule Hf.Http.Special.Persist do
   defp persist_result({_, _, _, %R{id: id}}, %Api{} = a, {:req, _}),
     do: {:ok, id, %Api{a | rid: id}}
 
-  defp persist_result({_, _, _, %R{id: _}}, %Api{result: result}, _), do: {:ok, result}
+  defp persist_result({_, _, _, %R{id: id}}, %Api{result: _}, _), do: {:ok, id}
   defp persist_result(_, _, _), do: {:error, :persist_error}
 end

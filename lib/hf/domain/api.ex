@@ -15,25 +15,32 @@ defmodule Hf.Domain.Api do
     :pipes,
     :payload,
     :methods,
-    :kind
+    :kind,
+    :context,
+    :input,
+    :tests
   ]
 
   schema "apis" do
     field :name, AtomString
     field :version, :integer, default: 1
     field :env_id, :integer
-    field :group, :string
+    field :group, AtomString
     field :state, ApiStates, default: :enabled
     field :kind, ApiKinds, default: :custom
     field :url, :string, default: "<%= input.url %>"
     field :tags, {:array, AtomOrTuple}, default: []
     field :pipes, {:array, TuplePipe}, default: []
     field :methods, {:array, TupleMethod}, default: []
+    field :tests, {:array, NormalMap}, default: []
+    field :context, {:array, TermMap}, default: []
+    field :input, {:array, TermMap}, default: []
     field :payload, :map
     timestamps()
 
-    has_many :reqs, Domain.Request, foreign_key: :api_id
+    has_many :reqs, Domain.Record, foreign_key: :api_id
     belongs_to :env, Domain.Env, foreign_key: :env_id, define_field: false
+    belongs_to :g, Domain.Group, foreign_key: :group, references: :name, define_field: false
 
     has_many :hist, Domain.History, foreign_key: :pk, where: [table_name: "apis"]
 

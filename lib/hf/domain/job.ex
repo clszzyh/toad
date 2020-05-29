@@ -22,7 +22,7 @@ defmodule Hf.Domain.Job do
     field :unsaved_error, :map, virtual: true
 
     field :api, :any, virtual: true
-    has_one :req, Domain.Request, foreign_key: :job_id
+    has_one :req, Domain.Record, foreign_key: :job_id
   end
 
   def compose_query(%Query{} = query, {:join, {kind, :req}}) when kind in [:inner, :left] do

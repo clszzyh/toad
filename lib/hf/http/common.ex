@@ -11,9 +11,9 @@ defmodule Hf.Http.Common do
       alias Hf.Http.{
         Api,
         Ast,
+        Core,
         Custom,
         Dynamic,
-        Fetcher,
         Middleware,
         Persist,
         Registry,
@@ -21,13 +21,16 @@ defmodule Hf.Http.Common do
         Tool
       }
 
+      alias Hf.Cache
       alias Hf.Util
 
       alias Hf.Debugger
       alias Hf.Domain
       alias Hf.Domain.Api, as: A
+      alias Hf.Domain.Group, as: G
       alias Hf.Domain.Job, as: J
-      alias Hf.Domain.Request, as: R
+      alias Hf.Domain.Record, as: R
+      alias Hf.Domain.Test, as: T
       alias Hf.Repo
       alias Hf.Workers.RequestWorker
     end

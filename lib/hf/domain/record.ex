@@ -1,17 +1,17 @@
-defmodule Hf.Domain.Request do
+defmodule Hf.Domain.Record do
   @moduledoc false
   use Hf.Schema
 
-  display [:source, :timeout, :result, :url]
   required [:url, :source, :state]
 
   permitted [
-    :timeout,
+    :cost,
     :input,
     :version,
     :job_id,
     :api_id,
     :parent_id,
+    :test_id,
     :raw,
     :url,
     :source,
@@ -36,22 +36,23 @@ defmodule Hf.Domain.Request do
     {Jason.Encoder, only: [:id, :created_at, :updated_at | @display_fields || []]},
     {Inspect, except: @except_fields || []}
   ]
-  schema "request_records" do
+  schema "records" do
     field :state, RequestStates
     field :method, RequestMethods
 
     field :content_type, RequestContentTypes, default: :none
 
     field :source, AtomString
-    field :result, :string
+    field :result, DynamicString
     field :version, :integer
     field :job_id, :integer
     field :api_id, :integer
     field :attempt, :integer
     field :parent_id, :integer
     field :proxy_id, :integer
+    field :test_id, :integer
     field :url, :string
-    field :timeout, :float
+    field :cost, :integer
     field :target, :string
     field :proxy, :string
 
@@ -70,6 +71,7 @@ defmodule Hf.Domain.Request do
     field :valid_trace, :any, virtual: true
 
     belongs_to :job, Domain.Job, foreign_key: :job_id, define_field: false
+    belongs_to :test, Domain.Test, foreign_key: :test_id, define_field: false
     belongs_to :a, Domain.Api, foreign_key: :api_id, define_field: false
     belongs_to :parent, __MODULE__, foreign_key: :parent_id, define_field: false
     has_many :childs, __MODULE__, foreign_key: :parent_id

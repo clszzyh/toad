@@ -8,6 +8,7 @@ defmodule Hf.Http.Middleware do
       :input,
       hook: [stage: :retry],
       method: [],
+      oauth2: [],
       params: [],
       body: [],
       mock: [],
@@ -24,6 +25,7 @@ defmodule Hf.Http.Middleware do
       persist: [stage: :after]
     ],
     {:resp, :before} => [
+      :do_request,
       :build_response,
       hook: [stage: :before],
       content_type: [],

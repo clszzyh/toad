@@ -43,6 +43,7 @@ alias Hf.Http.Req.{
   Input,
   Method,
   Options,
+  Oauth2,
   BuildRequest,
   Params,
   Body,
@@ -54,6 +55,7 @@ alias Hf.Http.Req.{
 }
 
 alias Hf.Http.Resp.{
+  DoRequest,
   CodeMsg,
   FlokiParse,
   JsonParse,
@@ -74,7 +76,7 @@ alias Hf.Http.Dynamic
 alias Hf.Http.Custom
 alias Hf.Http.Config
 
-alias Hf.Http.Fetcher
+alias Hf.Http.Core
 alias Hf.Http.Tool
 alias Hf.Http.Api
 alias Hf.Http.Middleware
@@ -83,15 +85,18 @@ alias Hf.Http.Registry
 alias HTTPoison.Error
 alias HTTPoison.Request, as: Req
 alias HTTPoison.Response, as: Resp
-import Hf.Http.Fetcher
+import Hf.Http.Core
 
 alias Hf.Domain.Job, as: J
 alias Hf.Domain.Environment, as: Env
 alias Hf.Domain.Error, as: E
-alias Hf.Domain.Request, as: R
+alias Hf.Domain.Record, as: R
 alias Hf.Domain.Api, as: A
+alias Hf.Domain.Group, as: G
 alias Hf.Domain.Snapshot, as: S
 alias Hf.Domain.History, as: H
+alias Hf.Domain.Variable, as: V
+alias Hf.Domain.Test, as: T
 alias Hf.Concern.Queryable, as: Q
 import Hf.Concern.Queryable
 alias Ecto.Adapters.SQL
@@ -101,3 +106,4 @@ alias Hf.ReportError
 
 require Hf.Macro
 import Hf.Macro
+alias Hf.Cache

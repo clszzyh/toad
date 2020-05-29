@@ -6,6 +6,7 @@ defmodule Hf.Types.TraceMap do
   def load(%{
         "index" => index,
         "kind" => kind,
+        "cost" => cost,
         "middleware" => middleware,
         "attempt" => attempt,
         "state" => state,
@@ -13,17 +14,18 @@ defmodule Hf.Types.TraceMap do
       }) do
     {:ok,
      {index,
-      {{attempt, String.to_atom(kind), String.to_atom(middleware)},
+      {{attempt, String.to_atom(kind), String.to_atom(middleware), cost},
        {String.to_atom(state), Util.load_value(result)}}}}
   end
 
   @impl Type
-  def dump({index, {{attempt, kind, middleware}, {state, result}}})
+  def dump({index, {{attempt, kind, middleware, cost}, {state, result}}})
       when is_integer(index) and is_atom(kind) and is_atom(middleware) and is_atom(state) do
     {:ok,
      %{
        "index" => index,
        "kind" => kind,
+       "cost" => cost,
        "middleware" => middleware,
        "attempt" => attempt,
        "state" => state,

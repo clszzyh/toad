@@ -22,6 +22,7 @@ defmodule Hf do
   def broadcast(topic, {kind, object}) do
     result = Phoenix.PubSub.broadcast(Hf.PubSub, topic, {kind, object})
     debug([:broadcast, topic, result, kind])
+    result
   end
 
   def pubsub_key(job_id, :api), do: "api:#{job_id}"
@@ -29,6 +30,6 @@ defmodule Hf do
   def subscribe_api(job_id) when job_id not in [nil, ""],
     do: job_id |> pubsub_key(:api) |> subscribe()
 
-  def maybe_broadcast_api(nil, _), do: nil
+  def maybe_broadcast_api(nil, _), do: :ok
   def maybe_broadcast_api(job_id, {_, _} = obj), do: job_id |> pubsub_key(:api) |> broadcast(obj)
 end

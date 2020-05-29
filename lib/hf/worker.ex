@@ -17,8 +17,8 @@ defmodule Hf.Worker do
       alias Hf.Domain.Api, as: A
       alias Hf.Domain.Environment, as: E
       alias Hf.Domain.Job, as: J
-      alias Hf.Domain.Request, as: R
-      alias Hf.Http.{Api, Fetcher}
+      alias Hf.Domain.Record, as: R
+      alias Hf.Http.{Api, Core}
       alias Hf.Repo
       alias Oban.{Beat, Job}
       import Ecto.Query, warn: false

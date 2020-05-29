@@ -1,6 +1,18 @@
 defmodule Hf.Util do
   @moduledoc false
 
+  import Hf.LocalLogger
+
+  def match_ast(o, ast) do
+    {matched, _} = Code.eval_quoted(quote(do: match?(unquote(ast), unquote(Macro.escape(o)))))
+
+    unless matched, do: error([:not_matched, Macro.to_string(ast), o])
+
+    {matched, Macro.to_string(ast)}
+  rescue
+    e -> {:error, use(Hf.ReportError, type: :test_match, reason: e, stacktrace: __STACKTRACE__)}
+  end
+
   def atomize_keys(o, options \\ [])
   def atomize_keys(%_{} = map, _), do: map
   def atomize_keys(%{} = map, _), do: map |> Enum.into(%{}, &atomize_keys/1)
@@ -108,6 +120,9 @@ defmodule Hf.Util do
   def dump_value(v) when is_binary(v), do: %{"type" => "binary", "value" => v}
   def dump_value(v) when is_number(v), do: %{"type" => "number", "value" => v}
 
+  def dump_value(v) when is_function(v),
+    do: %{"type" => "function", "value" => term_to_encode64(v)}
+
   def dump_value(v) when is_tuple(v),
     do: %{"type" => "tuple", "value" => v |> Tuple.to_list() |> Enum.map(&dump_value/1)}
 
@@ -122,6 +137,7 @@ defmodule Hf.Util do
   def load_value(%{"type" => "binary", "value" => v}), do: v
   def load_value(%{"type" => "number", "value" => v}), do: v
   def load_value(%{"type" => "list", "value" => v}), do: Enum.map(v, &load_value/1)
+  def load_value(%{"type" => "function", "value" => v}), do: encode64_to_term(v)
 
   def load_value(%{"type" => "tuple", "value" => v}),
     do: v |> Enum.map(&load_value/1) |> List.to_tuple()

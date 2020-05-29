@@ -10,6 +10,9 @@ defmodule Hf.Application do
     Envy.auto_load()
     Envy.reload_config()
 
+    import Supervisor.Spec
+    import Cachex.Spec
+
     children = [
       # Start the Ecto repository
       Hf.Repo,
@@ -21,7 +24,16 @@ defmodule Hf.Application do
       {Phoenix.PubSub, name: Hf.PubSub},
       # Start the Endpoint (http/https)
       HfWeb.Endpoint,
-      {Oban, oban_config()}
+      {Oban, oban_config()},
+      worker(Cachex, [
+        :app_cache,
+        [
+          expiration:
+            expiration(default: :timer.minutes(10), interval: :timer.hours(24), lazy: false),
+          stats: true
+        ]
+      ])
+
       # Start a worker by calling: Hf.Worker.start_link(arg)
       # {Hf.Worker, arg}
     ]
@@ -31,7 +43,7 @@ defmodule Hf.Application do
     opts = [strategy: :one_for_one, name: Hf.Supervisor]
     result = Supervisor.start_link(children, opts)
 
-    if Code.ensure_loaded?(IEx) and IEx.started?() do
+    if (Code.ensure_loaded?(IEx) and IEx.started?()) or Mix.env() == :test do
       :ok = Http.Config.load()
       Hf.hide_debug!(:all)
     end

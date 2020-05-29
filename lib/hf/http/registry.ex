@@ -4,7 +4,7 @@ defmodule Hf.Http.Registry do
   use GenServer
 
   @derive [{Inspect, except: [:metas]}]
-  defstruct apis: %{}, versions: %{}, metas: %{}, count: 0, errors: %{}
+  defstruct apis: %{}, versions: %{}, metas: %{}, count: 0, errors: %{}, tests: %{}
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
@@ -95,8 +95,13 @@ defmodule Hf.Http.Registry do
 
   def handle_cast(
         {:register, {:ok, {{id, name, version}, module}}},
-        %__MODULE__{count: count, apis: %{} = apis, versions: %{} = versions, metas: %{} = metas} =
-          state
+        %__MODULE__{
+          count: count,
+          apis: %{} = apis,
+          versions: %{} = versions,
+          metas: %{} = metas,
+          tests: %{} = tests
+        } = state
       ) do
     info([count, {:id, id}, name, version, module])
 
@@ -108,6 +113,12 @@ defmodule Hf.Http.Registry do
         %{} = m -> Map.put(m, version, module)
       end
 
+    tests =
+      case module.meta.tests do
+        [] -> tests
+        [_ | _] = ary -> tests |> Map.put(module, ary)
+      end
+
     {:noreply,
      %__MODULE__{
        state
@@ -115,7 +126,8 @@ defmodule Hf.Http.Registry do
          apis:
            Map.put(apis, module, {id, name, version, "#{name}_v#{version}" |> String.to_atom()}),
          metas: Map.put(metas, module, module.meta),
-         versions: Map.put(versions, name, new_version)
+         versions: Map.put(versions, name, new_version),
+         tests: tests
      }}
   end
 end

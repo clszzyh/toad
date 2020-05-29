@@ -1,7 +1,48 @@
-defmodule Hf.Http.Fetcher do
+defmodule Hf.Http.Core do
   @moduledoc false
 
   use Hf.Http.Common
+
+  def test(nil, _), do: raise("None!")
+
+  def test(%{name: name, pattern: ast} = test, module) do
+    test
+    |> do_test(module)
+    |> Util.match_ast(ast)
+    |> case do
+      true -> info([{:test, name, :ok}])
+      false -> error([{:test, name, :error}])
+      {true, result} -> info([{:test, name, :ok, result}])
+      {false, result} -> error([{:test, name, :error, result}])
+      {:error, reason} -> error([{:test, name, :error, reason}])
+    end
+  end
+
+  def do_test(%{name: name, pattern: ast, kind: kind} = test, mod) do
+    params = %{
+      name: name,
+      api_id: mod.meta.aid,
+      kind: kind,
+      config: test,
+      source: mod |> Tool.api_name()
+    }
+
+    %T{id: test_id} = t = %T{} |> T.changeset(params) |> Repo.insert!()
+
+    result = run_test(test, mod, %{test_id: test_id})
+    {matched, _} = Util.match_ast(result, ast)
+
+    t |> T.changeset(%{matched: matched, result: result}) |> Repo.update!()
+
+    result
+  end
+
+  defp run_test(config, mod, extra)
+
+  defp run_test(%{kind: :rq, input: [%{} = input]}, mod, %{} = extra),
+    do: apply(__MODULE__, :rq, [mod, input |> Map.merge(extra)])
+
+  defp run_test(%{kind: :meta}, mod, _), do: mod.meta
 
   def meta(mod), do: Tool.api_cast(mod).meta
 
@@ -72,16 +113,17 @@ defmodule Hf.Http.Fetcher do
 
   def maybe_build_request(a), do: a
 
-  def resume(%Api{rid: id} = a) do
+  def resume(%Api{rid: id} = a) when is_integer(id) do
     r = R |> Domain.find(id)
     resume(%R{r | api: a})
   end
+
+  def resume(%Api{state: state, result: result}), do: {state, result}
 
   def resume(%R{id: id, state: :paused}), do: {:paused, id}
 
   def resume(%R{api: %Api{} = a}) do
     a
-    |> Request.do_request()
     |> handle_response()
     |> handle_result()
     |> handle_return()
@@ -169,18 +211,20 @@ defmodule Hf.Http.Fetcher do
   defp parse_middleware_result({:req_body, body}, %Api{} = a, {code, result}),
     do: {code, result, %Api{a | body: body}}
 
+  defp parse_middleware_result({:input, {k, v}}, %Api{input: input} = a, {code, result}) do
+    {code, result, %Api{a | input: input |> Map.put(k, v)}}
+  end
+
   defp parse_middleware_result({:resp_body, {code, result}, body}, %Api{} = a, _) do
     parse_middleware_result({:resp_body, body}, a, {code, result})
   end
 
-  defp parse_middleware_result(
-         {:resp_body, body},
-         %Api{resp: %Resp{} = resp} = a,
-         {code, result}
-       ),
-       do: {code, result, %Api{a | resp: %Resp{resp | body: body}}}
+  defp parse_middleware_result({:resp_body, body}, %Api{resp: %Resp{} = resp} = a, {code, result}) do
+    {code, result, %Api{a | resp: %Resp{resp | body: body}}}
+  end
 
   defp parse_middleware_result(%Api{} = a, %Api{}, {code, result}), do: {code, result, a}
+  defp parse_middleware_result(%Api{state: code, result: result} = a, _, _), do: {code, result, a}
   defp parse_middleware_result({code, result}, %Api{} = a, _), do: {code, result, a}
   defp parse_middleware_result({code, result, %Api{} = a}, _, _), do: {code, result, a}
 
@@ -214,24 +258,26 @@ defmodule Hf.Http.Fetcher do
           {code, result, a}
       end
 
-    a |> trace(middleware, {code, result}, kind) |> build_middleware({code, result})
-  end
-
-  @ignored_states [:ignored, :disabled]
-
-  defp build_middleware(%Api{} = a, {:fatal, result}),
-    do: build_middleware_fill_api(a, {:fatal, result})
-
-  defp build_middleware(%Api{state: state} = a, {code, result})
-       when state in [:ok | @ignored_states] and code not in @ignored_states do
-    build_middleware_fill_api(a, {code, result})
-  end
-
-  defp build_middleware(%Api{} = a, {_, _}), do: a
-
-  defp build_middleware_fill_api(%Api{} = a, {code, result}) do
+    a = a |> trace(middleware, {code, result}, kind)
+    {code, result} = a |> build_middleware({code, result})
     %Api{a | state: code, result: result}
   end
+
+  @ignored_states [:ignored, :disabled, :ok]
+
+  defp build_middleware(%Api{}, {:fatal, result}), do: {:fatal, result}
+
+  defp build_middleware(%Api{}, {:result_ok, result}), do: {:ok, result}
+
+  defp build_middleware(%Api{state: state}, {code, result})
+       when state in @ignored_states and code not in @ignored_states,
+       do: {code, result}
+
+  defp build_middleware(%Api{resp: %Resp{body: body}, state: state}, {_, _})
+       when not is_nil(body),
+       do: {state, body}
+
+  defp build_middleware(%Api{state: state, result: result}, {_, _}), do: {state, result}
 
   def trace(a, middleware, res \\ nil, kind \\ :send)
 
@@ -252,14 +298,17 @@ defmodule Hf.Http.Fetcher do
   end
 
   defp trace_2(
-         %Api{trace: trace, input: %{job_id: job_id, attempt: attempt}} = a,
+         %Api{trace: trace, time: time, input: %{job_id: job_id, attempt: attempt}} = a,
          {code, result},
          middleware,
          index,
          kind
        ) do
+    now = System.monotonic_time()
+    cost = now |> Kernel.-(time) |> System.convert_time_unit(:native, :millisecond)
+
     ary =
-      [{:pad_leading, 17, index}] ++
+      [{:pad_leading, 17, index}, {:pad_leading, 17, cost}] ++
         Api.prefix(a) ++ Api.suffix(a, {kind, middleware, code, result})
 
     level =
@@ -278,21 +327,15 @@ defmodule Hf.Http.Fetcher do
 
     apply(Hf.LocalLogger, level, [ary])
 
-    obj = {index, {{attempt, kind, middleware}, {code, result}}}
-    Hf.maybe_broadcast_api(job_id, {:trace, obj})
+    obj = {index, {{attempt, kind, middleware, cost}, {code, result}}}
+    :ok = Hf.maybe_broadcast_api(job_id, {:trace, obj})
 
-    %Api{a | trace: [obj | trace]}
+    %Api{a | time: now, trace: [obj | trace]}
   end
 
-  def handle_return(
-        %Api{state: state, result: result, req: %Req{url: _}, input: %{job_id: job_id}} = a
-      ) do
+  def handle_return(%Api{state: state, result: result, req: %Req{url: _}} = a) do
     warn(Api.prefix(a) ++ Api.suffix(a), box: :before, prefix: "rq ")
 
-    if job_id do
-      {state, result, a}
-    else
-      {state, result}
-    end
+    {state, result, a}
   end
 end

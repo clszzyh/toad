@@ -127,6 +127,9 @@ CREATE TABLE public.apis (
     tags character varying(255)[] DEFAULT ARRAY[]::character varying[] NOT NULL,
     pipes jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
     methods jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    context jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    input jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    tests jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
     payload jsonb,
     inserted_at timestamp(0) without time zone NOT NULL,
     updated_at timestamp(0) without time zone NOT NULL
@@ -254,6 +257,44 @@ ALTER SEQUENCE public.errors_id_seq OWNED BY public.errors.id;
 
 
 --
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.groups (
+    id bigint NOT NULL,
+    name character varying(255) NOT NULL,
+    tags character varying(255)[] DEFAULT ARRAY[]::character varying[] NOT NULL,
+    pipes jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    methods jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    context jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    input jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    tests jsonb[] DEFAULT ARRAY[]::jsonb[] NOT NULL,
+    payload jsonb,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: groups_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.groups_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: groups_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.groups_id_seq OWNED BY public.groups.id;
+
+
+--
 -- Name: history; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -366,7 +407,7 @@ CREATE TABLE public.proxys (
     state integer NOT NULL,
     proxy character varying(255) NOT NULL,
     reason character varying(1000),
-    timeout double precision,
+    cost integer,
     record_id bigint,
     job_id bigint,
     validated_at timestamp(0) without time zone,
@@ -398,10 +439,10 @@ ALTER SEQUENCE public.proxys_id_seq OWNED BY public.proxys.id;
 
 
 --
--- Name: request_records; Type: TABLE; Schema: public; Owner: -
+-- Name: records; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.request_records (
+CREATE TABLE public.records (
     id bigint NOT NULL,
     source character varying(255) NOT NULL,
     state integer NOT NULL,
@@ -410,8 +451,8 @@ CREATE TABLE public.request_records (
     proxy character varying(255),
     version integer,
     attempt integer,
-    result character varying(1000),
-    timeout double precision,
+    result text,
+    cost integer,
     method integer NOT NULL,
     trace jsonb[] DEFAULT ARRAY[]::jsonb[],
     extra jsonb DEFAULT '{}'::jsonb,
@@ -419,6 +460,7 @@ CREATE TABLE public.request_records (
     job_id bigint,
     proxy_id bigint,
     parent_id bigint,
+    test_id bigint,
     raw bytea,
     payload jsonb,
     history json,
@@ -431,10 +473,10 @@ CREATE TABLE public.request_records (
 
 
 --
--- Name: request_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.request_records_id_seq
+CREATE SEQUENCE public.records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -443,10 +485,10 @@ CREATE SEQUENCE public.request_records_id_seq
 
 
 --
--- Name: request_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.request_records_id_seq OWNED BY public.request_records.id;
+ALTER SEQUENCE public.records_id_seq OWNED BY public.records.id;
 
 
 --
@@ -457,6 +499,44 @@ CREATE TABLE public.schema_migrations (
     version bigint NOT NULL,
     inserted_at timestamp(0) without time zone
 );
+
+
+--
+-- Name: tests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tests (
+    id bigint NOT NULL,
+    api_id bigint,
+    source character varying(255) NOT NULL,
+    kind character varying(255) NOT NULL,
+    name character varying(255) NOT NULL,
+    config jsonb NOT NULL,
+    result text,
+    matched integer NOT NULL,
+    payload json,
+    inserted_at timestamp(0) without time zone NOT NULL,
+    updated_at timestamp(0) without time zone NOT NULL
+);
+
+
+--
+-- Name: tests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.tests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.tests_id_seq OWNED BY public.tests.id;
 
 
 --
@@ -523,6 +603,13 @@ ALTER TABLE ONLY public.errors ALTER COLUMN id SET DEFAULT nextval('public.error
 
 
 --
+-- Name: groups id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.groups ALTER COLUMN id SET DEFAULT nextval('public.groups_id_seq'::regclass);
+
+
+--
 -- Name: history id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -544,10 +631,17 @@ ALTER TABLE ONLY public.proxys ALTER COLUMN id SET DEFAULT nextval('public.proxy
 
 
 --
--- Name: request_records id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: records id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.request_records ALTER COLUMN id SET DEFAULT nextval('public.request_records_id_seq'::regclass);
+ALTER TABLE ONLY public.records ALTER COLUMN id SET DEFAULT nextval('public.records_id_seq'::regclass);
+
+
+--
+-- Name: tests id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tests ALTER COLUMN id SET DEFAULT nextval('public.tests_id_seq'::regclass);
 
 
 --
@@ -590,6 +684,14 @@ ALTER TABLE ONLY public.errors
 
 
 --
+-- Name: groups groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.groups
+    ADD CONSTRAINT groups_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: history history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -614,11 +716,11 @@ ALTER TABLE ONLY public.proxys
 
 
 --
--- Name: request_records request_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: records records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.request_records
-    ADD CONSTRAINT request_records_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.records
+    ADD CONSTRAINT records_pkey PRIMARY KEY (id);
 
 
 --
@@ -627,6 +729,14 @@ ALTER TABLE ONLY public.request_records
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: tests tests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tests
+    ADD CONSTRAINT tests_pkey PRIMARY KEY (id);
 
 
 --
@@ -649,6 +759,13 @@ CREATE UNIQUE INDEX apis_name_version_index ON public.apis USING btree (name, ve
 --
 
 CREATE UNIQUE INDEX environments_name_index ON public.environments USING btree (name);
+
+
+--
+-- Name: groups_name_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX groups_name_index ON public.groups USING btree (name);
 
 
 --
@@ -680,24 +797,52 @@ CREATE INDEX oban_jobs_queue_state_priority_scheduled_at_id_index ON public.oban
 
 
 --
--- Name: request_records_job_id_index; Type: INDEX; Schema: public; Owner: -
+-- Name: records_api_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX request_records_job_id_index ON public.request_records USING btree (job_id);
-
-
---
--- Name: request_records_parent_id_index; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX request_records_parent_id_index ON public.request_records USING btree (parent_id);
+CREATE INDEX records_api_id_index ON public.records USING btree (api_id);
 
 
 --
--- Name: request_records_source_index; Type: INDEX; Schema: public; Owner: -
+-- Name: records_job_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX request_records_source_index ON public.request_records USING btree (source);
+CREATE INDEX records_job_id_index ON public.records USING btree (job_id);
+
+
+--
+-- Name: records_parent_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX records_parent_id_index ON public.records USING btree (parent_id);
+
+
+--
+-- Name: records_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX records_source_index ON public.records USING btree (source);
+
+
+--
+-- Name: records_test_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX records_test_id_index ON public.records USING btree (test_id);
+
+
+--
+-- Name: tests_api_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX tests_api_id_index ON public.tests USING btree (api_id);
+
+
+--
+-- Name: tests_source_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX tests_source_index ON public.tests USING btree (source);
 
 
 --
@@ -719,6 +864,13 @@ CREATE TRIGGER oban_notify AFTER INSERT ON public.oban_jobs FOR EACH ROW EXECUTE
 --
 
 CREATE TRIGGER zzz_apis_shadow_trigger BEFORE DELETE OR UPDATE ON public.apis FOR EACH ROW EXECUTE FUNCTION shadow.versioning('apis');
+
+
+--
+-- Name: groups zzz_groups_shadow_trigger; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER zzz_groups_shadow_trigger BEFORE DELETE OR UPDATE ON public.groups FOR EACH ROW EXECUTE FUNCTION shadow.versioning('groups');
 
 
 --

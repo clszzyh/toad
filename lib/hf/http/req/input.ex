@@ -1,8 +1,15 @@
 defmodule Hf.Http.Req.Input do
   use Hf.Http.Middleware
 
-  def pipe(%Api{state: :ok, input: input} = a, %{} = i) do
-    {input, a} = input |> Map.merge(i) |> atomize_input() |> Enum.reduce({%{}, a}, &parse_input/2)
+  def pipe(%Api{state: :ok, initial_input: %{} = initial_input, input: %{} = input} = a, %{} = i) do
+    {input, a} =
+      initial_input
+      |> Map.merge(input)
+      |> Map.merge(i)
+      |> atomize_input()
+      |> Map.put(:now, Util.now())
+      |> Enum.reduce({%{}, a}, &parse_input/2)
+
     {:ok, input, %Api{a | input: input}}
   end
 

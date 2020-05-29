@@ -15,7 +15,7 @@ defmodule Hf.Http.Result.Enqueue do
       end
 
     if should_enqueue do
-      %J{id: id} = Fetcher.enqueue(module, input |> Map.put(:parent_id, parent_id))
+      %J{id: id} = Core.enqueue(module, input |> Map.put(:parent_id, parent_id))
       {:ok, id}
     else
       :ignored

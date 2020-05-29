@@ -1,7 +1,8 @@
 defmodule Hf.Repo.Migrations.AddShadowSchema do
   use Ecto.Migration
 
-  @tables_setup ["apis"] |> Enum.map(fn name -> "select shadow.setup_jsonb('#{name}');" end)
+  @tables_setup ["apis", "groups"]
+                |> Enum.map(fn name -> "select shadow.setup_jsonb('#{name}');" end)
 
   def up do
     sqls =

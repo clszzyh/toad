@@ -4,9 +4,11 @@ defmodule Hf.Http.Tool do
 
   @default_map %{job_id: nil, parent_id: nil, max_attempts: 0, attempt: 0}
 
-  def merge_input(input) do
+  def merge_input(input) when is_list(input) or is_map(input) do
     @default_map |> Map.merge(Map.new(input))
   end
+
+  def merge_input(input), do: merge_input(%{i: input})
 
   def map_to_list(%{} = map) do
     for {k, v} <- map, do: {k, map_to_list(v)}
@@ -88,8 +90,8 @@ defmodule Hf.Http.Tool do
   def api_cast(name, version \\ 0)
 
   def api_cast(name, %{version: version}) when is_integer(version), do: api_cast(name, version)
-  def api_cast(name, %{}), do: api_cast(name, 0)
   def api_cast(name, input) when is_list(input), do: api_cast(name, input[:version] || 0)
+  def api_cast(name, %{}), do: api_cast(name, 0)
 
   def api_cast(name, version) when is_binary(name) and is_integer(version),
     do: name |> String.to_atom() |> api_cast(version)
@@ -101,6 +103,8 @@ defmodule Hf.Http.Tool do
       Registry.module({name, version}) || raise("[module]: 找不到#{name} #{version}")
     end
   end
+
+  def api_cast(name, _), do: api_cast(name, %{})
 
   def name_to_module(name) do
     n =

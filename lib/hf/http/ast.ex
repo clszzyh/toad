@@ -14,7 +14,10 @@ defmodule Hf.Http.Ast do
     pipes: :pipe,
     id: :aid,
     name: :name,
-    methods: :method
+    methods: :method,
+    tests: :test,
+    context: :context,
+    input: :input
   ]
 
   for {k, n} <- @macros do
@@ -61,6 +64,14 @@ defmodule Hf.Http.Ast do
 
   def tag_ast(:paused) do
     quote(do: pre_request(input: [initial_state: :paused]))
+  end
+
+  def tag_ast(:restful_i_as_url_suffix) do
+    ast = [args: quote(do: [_, %{i: i}, _]), body: quote(do: {:input, {:url_suffix, i}})]
+
+    quote do
+      unquote(method_ast({:body, ast}))
+    end
   end
 
   def tag_ast({:mock_retry, kind}) do

@@ -40,7 +40,7 @@ defmodule Hf.Workers.RequestWorker do
   def request_2({mod, %{} = input}, %Job{}) do
     module = mod |> String.to_existing_atom()
 
-    {state, result, a} = module |> Fetcher.rq(input)
+    {state, result, a} = module |> Core.rq(input)
 
     oban_result =
       case state do

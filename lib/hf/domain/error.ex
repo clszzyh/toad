@@ -12,8 +12,8 @@ defmodule Hf.Domain.Error do
     field :eid, :integer
     field :format_blamed, :string
     field :reason, :string
-    field :stacktrace, {:array, StacktraceMap}
-    field :context, {:array, TermMap}
+    field :stacktrace, {:array, StacktraceMap}, default: []
+    field :context, {:array, TermMap}, default: []
     field :payload, :map, autogenerate: {Schema, :get_payload, []}
     timestamps()
   end
@@ -25,4 +25,6 @@ defmodule Hf.Domain.Error do
         | stacktrace: stacktrace |> Enum.filter(&match?(%{options: %{file: "lib/hf" <> _}}, &1))
       }
   end
+
+  def info_tail, do: IO.puts(__MODULE__.tail().format_blamed)
 end

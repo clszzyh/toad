@@ -6,7 +6,7 @@ defmodule Hf.MixProject do
       app: :hf,
       version: "VERSION" |> File.read!() |> String.trim(),
       elixir: "~> 1.7",
-      description: "Spider manager platform.",
+      description: "Request manager platform.",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -82,6 +82,9 @@ defmodule Hf.MixProject do
       {:basic_auth, "~> 2.2.3"},
       {:scrivener_ecto, "~> 2.0"},
       {:sizeable, "~> 1.0"},
+      {:oauth2, github: "clszzyh/oauth2"},
+      {:decorator, "~> 1.3.2"},
+      {:exvcr, "~> 0.11"},
       {:plug, "~> 1.10.0", override: true},
       {:credo, "~> 1.4.0", only: [:dev, :test], runtime: false}
     ]

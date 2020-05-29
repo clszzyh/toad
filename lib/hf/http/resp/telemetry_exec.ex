@@ -1,13 +1,15 @@
 defmodule Hf.Http.Resp.TelemetryExec do
   use Hf.Http.Middleware
 
-  def pipe(%Api{url: url, state: state, extra: %{duration: duration}}, _) do
+  def pipe(%Api{url: url, state: state} = a, _) do
+    duration = Api.timeout(a)
+
     :ok =
       :telemetry.execute([:hf, :http, :request], %{duration: duration}, %{
         url: url,
         state: state
       })
 
-    :ok
+    {:ok, duration}
   end
 end

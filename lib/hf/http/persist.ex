@@ -18,7 +18,8 @@ defmodule Hf.Http.Persist do
       ) do
     %{
       state: input[:initial_state] || :init,
-      input: input |> Map.drop([:job_id, :parent_id]),
+      input: input |> Map.drop([:job_id, :parent_id, :test_id]),
+      test_id: input[:test_id],
       job_id: job_id,
       attempt: attempt,
       api_id: aid,
@@ -31,8 +32,8 @@ defmodule Hf.Http.Persist do
     }
   end
 
-  def request_params(%Api{state: :ok, resp: %Resp{body: body}}, {:resp, :before}) do
-    %{state: :ok, raw: body}
+  def request_params(%Api{state: :ok, resp: %Resp{body: body}} = a, {:resp, :before}) do
+    %{state: :ok, raw: body, cost: Api.timeout(a)}
   end
 
   def request_params(%Api{state: :ok, resp: %Resp{body: body}}, {:resp, :after}) do
@@ -40,7 +41,7 @@ defmodule Hf.Http.Persist do
   end
 
   def request_params(%Api{state: state, result: result}, {kind, _}) when kind != :req do
-    %{state: state, result: result |> Util.inspect_binary()}
+    %{state: state, result: result}
   end
 
   def build_payload(a, result \\ %{})
@@ -61,7 +62,9 @@ defmodule Hf.Http.Persist do
             options: req_options,
             headers: req_headers,
             params: req_params,
-            body: req_body
+            body: req_body,
+            method: method,
+            url: url
           }
         } = a,
         result
@@ -73,7 +76,9 @@ defmodule Hf.Http.Persist do
         "req_options" => req_options,
         "req_headers" => req_headers,
         "req_params" => req_params,
-        "req_body" => req_body
+        "req_body" => req_body,
+        "url" => url,
+        "method" => method
       })
     )
   end

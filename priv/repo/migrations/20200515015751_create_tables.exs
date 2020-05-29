@@ -19,7 +19,7 @@ defmodule Hf.Repo.Migrations.CreateTables do
       add :state, :integer, null: false
       add :proxy, :string, null: false
       add :reason, :string, size: 1000
-      add :timeout, :float
+      add :cost, :integer
       add :record_id, :bigint
       add :job_id, :bigint
       add :validated_at, :utc_datetime
@@ -59,6 +59,20 @@ defmodule Hf.Repo.Migrations.CreateTables do
 
     create index(:variables, [:env, :key], unique: true)
 
+    create table(:groups) do
+      add :name, :string, null: false
+      add :tags, {:array, :string}, null: false, default: []
+      add :pipes, {:array, :map}, null: false, default: []
+      add :methods, {:array, :map}, null: false, default: []
+      add :context, {:array, :map}, null: false, default: []
+      add :input, {:array, :map}, null: false, default: []
+      add :tests, {:array, :map}, null: false, default: []
+      add :payload, :map
+      timestamps()
+    end
+
+    create index(:groups, [:name], unique: true)
+
     create table(:apis) do
       add :name, :string, null: false
       add :version, :integer, null: false
@@ -70,6 +84,9 @@ defmodule Hf.Repo.Migrations.CreateTables do
       add :tags, {:array, :string}, null: false, default: []
       add :pipes, {:array, :map}, null: false, default: []
       add :methods, {:array, :map}, null: false, default: []
+      add :context, {:array, :map}, null: false, default: []
+      add :input, {:array, :map}, null: false, default: []
+      add :tests, {:array, :map}, null: false, default: []
       add :payload, :map
       timestamps()
     end
@@ -83,7 +100,22 @@ defmodule Hf.Repo.Migrations.CreateTables do
 
     create index(:environments, [:name], unique: true)
 
-    create table(:request_records) do
+    create table(:tests) do
+      add :api_id, :bigint
+      add :source, :string, null: false
+      add :kind, :string, null: false
+      add :name, :string, null: false
+      add :config, :map, null: false
+      add :result, :text
+      add :matched, :integer, null: false
+      add :payload, :json
+      timestamps()
+    end
+
+    create index(:tests, [:api_id])
+    create index(:tests, [:source])
+
+    create table(:records) do
       add :source, :string, null: false
       add :state, :integer, null: false
       add :content_type, :integer, null: false
@@ -91,8 +123,8 @@ defmodule Hf.Repo.Migrations.CreateTables do
       add :proxy, :string
       add :version, :integer
       add :attempt, :integer
-      add :result, :string, size: 1000
-      add :timeout, :float
+      add :result, :text
+      add :cost, :integer
       add :method, :integer, null: false
       add :trace, {:array, :map}, default: []
       add :extra, :map, default: %{}
@@ -100,6 +132,7 @@ defmodule Hf.Repo.Migrations.CreateTables do
       add :job_id, :bigint
       add :proxy_id, :bigint
       add :parent_id, :bigint
+      add :test_id, :bigint
 
       add :raw, :binary
       add :payload, {:map, :string}
@@ -111,8 +144,10 @@ defmodule Hf.Repo.Migrations.CreateTables do
       timestamps()
     end
 
-    create index(:request_records, [:parent_id])
-    create index(:request_records, [:job_id])
-    create index(:request_records, [:source])
+    create index(:records, [:parent_id])
+    create index(:records, [:job_id])
+    create index(:records, [:api_id])
+    create index(:records, [:source])
+    create index(:records, [:test_id])
   end
 end

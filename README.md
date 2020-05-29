@@ -8,6 +8,7 @@ Usage:
 %{
     name: :dingding,
     url: "https://oapi.dingtalk.com/robot/send",
+    version: 2,
     pipes: [
       method: :post,
       headers: [header_strategy: :json],
@@ -32,6 +33,14 @@ Usage:
         args: quote(do: [%{"errcode" => err, "errmsg" => res}]),
         body: quote(do: {:error, "#{err} #{res}"})
       ]
+    ],
+    tests: [
+      %{
+        kind: :rq,
+        name: "empty rq",
+        input: [%{}],
+        pattern: quote(do: {:ok, [_ | _], _})
+      }
     ]
 }
 ```

@@ -16,6 +16,7 @@ defmodule Hf.ReportError do
       import unquote(__MODULE__)
 
       reason = unquote(options[:reason])
+      result_reason = Util.inspect_error(reason)
       kind = unquote(options[:kind]) || :error
 
       stacktrace =
@@ -32,7 +33,7 @@ defmodule Hf.ReportError do
           kind: kind,
           type: unquote(options[:type]),
           eid: unquote(options[:eid]),
-          reason: Util.inspect_error(reason),
+          reason: result_reason,
           format_blamed: format_blamed,
           context: context,
           stacktrace: stacktrace
@@ -42,7 +43,7 @@ defmodule Hf.ReportError do
       )
       |> Repo.insert!()
 
-      reason
+      result_reason
     end
   end
 

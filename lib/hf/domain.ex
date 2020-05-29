@@ -4,8 +4,8 @@ defmodule Hf.Domain do
   alias Ecto.Changeset
   alias Hf.Domain.Api, as: A
   alias Hf.Domain.Job, as: J
-  alias Hf.Domain.Request, as: R
-  alias Hf.Http.{Api, Dynamic, Fetcher}
+  alias Hf.Domain.Record, as: R
+  alias Hf.Http.{Api, Core, Dynamic}
   alias Hf.Repo
 
   def page(module, params \\ %{}) do
@@ -67,7 +67,7 @@ defmodule Hf.Domain do
     |> Repo.preload(:req)
     |> case do
       %J{req: %R{} = req} = j ->
-        %R{api: %Api{} = a} = r = Fetcher.load(req)
+        %R{api: %Api{} = a} = r = Core.load(req)
         %J{j | req: %R{r | api: nil}, api: a}
 
       j ->
@@ -76,7 +76,7 @@ defmodule Hf.Domain do
   end
 
   def apis do
-    A |> Repo.all()
+    A |> Repo.all() |> Repo.preload(:g)
   end
 
   def next_version(%A{name: name}) do

@@ -20,6 +20,9 @@ defmodule HfWeb.Router do
 
   scope "/", HfWeb do
     pipe_through :browser
+
+    live "/", ApiIndexLive, :index
+    live "/page", PageLive, :index
   end
 
   scope "/" do
